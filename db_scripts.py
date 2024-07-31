@@ -3,6 +3,10 @@ import psycopg2
 INSERT_NEW_ADMIN = "INSERT INTO admins (user_id) VALUES {user_id};"
 
 FIND_ADMIN = "SELECT exists (SELECT 1 FROM admins WHERE user_id = {user_id} LIMIT 1)"
+COUNT_ACTIVE = “SELECT COUNT(user_id) FROM users WHERE active = 1;”
+
+
+
 
 conn = psycopg2.connect("dbname=word_bot user=burdi password=")
 
