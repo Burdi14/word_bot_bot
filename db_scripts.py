@@ -12,3 +12,6 @@ def find_admin(user_id):
     cur.execute(FIND_ADMIN.format(user_id=user_id))
     res = cur.fetchone()
     return res
+    
+def add_admin(user_id):
+    cur.execute(INSERT_NEW_ADMIN.format(user_id=user_id))
