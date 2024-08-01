@@ -1,12 +1,9 @@
 import os
-
 from aiogram import Router, F
 from aiogram.enums import ParseMode
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-
-import text
 from states import Word_setting, Admin_setting
 import kb
 import db_scripts
@@ -19,11 +16,14 @@ router = Router()
 post_data = {
     'word': '',
     'definition': '',
-    'description': ''
+    'description': '',
 }
 
 def wrap_post(word, definition, description):
-    msg = f'<b>слово дня</b>\n\n<i>{word}</i> - {definition}\n\n[{description}]\n#словодня'
+    if len(description) < 7:
+        msg = f'<b>слово дня</b>\n\n<i>{word}</i> - {definition}\n#словодня'
+    else:
+        msg = f'<b>слово дня</b>\n\n<i>{word}</i> - {definition}\n\n[{description}]\n#словодня'
     return msg
 
 def send_word():
@@ -41,13 +41,16 @@ async def start_handler(msg: Message, state: FSMContext):
     elif db_scripts.find_admin(str(msg.from_user.id)):
         await msg.answer(menu_text, reply_markup=kb.admin_menu_markup)
     else:
-        db_scripts.insert_new_user(str(msg.from_user.id), str(msg.from_user.username))
+        if db_scripts.find_user(str(msg.from_user.id)) == 'false':
+            db_scripts.insert_new_user(str(msg.from_user.id), str(msg.from_user.username))
         await msg.answer(text=greet.format(name=msg.from_user.first_name))
 
 
 @router.callback_query(F.data == 'admin_new_word')
 async def create_new_post(callback: CallbackQuery):
-    await callback.message.answer(text='enter new word', reply_markup=kb.new_word_menu_markup)
+    text = callback.message.text
+    await callback.message.edit_text(text=text)
+    await callback.message.answer(text='настройте новое слово дня', reply_markup=kb.new_word_menu_markup)
 
 
 @router.callback_query(F.data == 'get_word')
@@ -73,7 +76,8 @@ async def get_word(msg: Message, state: FSMContext):
     word = msg.text
     global post_data
     post_data['word'] = word
-    await msg.answer("word's received", reply_markup=kb.new_word_menu_markup)
+    await msg.answer("word's received")
+    await msg.answer(text=menu_text, reply_markup=kb.new_word_menu_markup)
     await state.clear()
 
 
@@ -82,7 +86,8 @@ async def get_definition(msg: Message, state: FSMContext):
     definition = msg.text
     global post_data
     post_data['definition'] = definition
-    await msg.answer("definition's received", reply_markup=kb.new_word_menu_markup)
+    await msg.answer("definition's received")
+    await msg.answer(text=menu_text, reply_markup=kb.new_word_menu_markup)
     await state.clear()
 
 
@@ -91,7 +96,8 @@ async def get_description(msg: Message, state: FSMContext):
     description = msg.text
     global post_data
     post_data['description'] = description
-    await msg.answer("description's received", reply_markup=kb.new_word_menu_markup)
+    await msg.answer("description's received")
+    await msg.answer(text=menu_text, reply_markup=kb.new_word_menu_markup)
     await state.clear()
 
 @router.callback_query(F.data == 'get_look')
@@ -101,12 +107,16 @@ async def get_look(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == 'get_unused_words')
 async def get_unused_words_handler(callback: CallbackQuery):
     list_words = db_scripts.get_unused_words()
-    list_words = [str(x)[2:-3]+'\n' for x in list_words]
-    res = ''.join(sorted(list_words))
-    if res == []:
-        await callback.message.answer(text='no unused words')
+
+    if list_words == None:
+        await callback.message.edit_text(text=menu_text)
+        if os.getenv('MAIN_ADMIN_ID') == 'false':
+            await callback.message.answer(text='нет неиспользованных слов', reply_markup=kb.admin_menu_markup)
+        else:
+            await callback.message.answer(text='нет неиспользованных слов', reply_markup=kb.main_admin_menu_markup)
     else:
-        await callback.message.answer(text=res, reply_markup=kb.old_word_menu_markup)
+        list_words = ''.join([str(x) + '\n' for x in list_words])
+        await callback.message.edit_text(text=list_words, reply_markup=kb.old_word_menu_markup)
 
 @router.callback_query(F.data == 'look_unused_word')
 async def set_get_unused_word_state(callback: CallbackQuery, state: FSMContext):
@@ -118,7 +128,6 @@ async def set_get_unused_word_state(callback: CallbackQuery, state: FSMContext):
 @router.message(Word_setting.check_word)
 async def write_word_to_check(msg: Message, state: FSMContext):
     word_data = db_scripts.find_word(msg.text)
-    print(word_data)
     await state.clear()
     try:
         await msg.answer(text=wrap_post(word_data[0], word_data[1], word_data[2]), parse_mode=ParseMode.HTML, reply_markup=kb.old_word_menu_markup)
@@ -128,8 +137,8 @@ async def write_word_to_check(msg: Message, state: FSMContext):
 
 @router.callback_query(F.data == 'back_to_menu')
 async def back_to_menu(callback: CallbackQuery):
-    user_id = callback.message.from_user.id
-    if user_id == os.getenv('MAIN_ADMIN_ID'):
+    user_id = callback.from_user.id
+    if user_id == str(os.getenv('MAIN_ADMIN_ID')):
         await callback.message.edit_text(text=menu_text, reply_markup=kb.main_admin_menu_markup)
     else:
         await callback.message.edit_text(text=menu_text, reply_markup=kb.admin_menu_markup)
@@ -144,7 +153,7 @@ async def writing_new_admin_handler(msg: Message, state: FSMContext):
     id = db_scripts.find_id_by_username(str(msg.text))
     db_scripts.insert_new_addmin(str(id)[1:-2])
     await state.clear()
-    await msg.answer('есть таски?', reply_markup=kb.main_admin_menu_markup)
+    await msg.answer(text=menu_text, reply_markup=kb.main_admin_menu_markup)
 
 
 @router.callback_query(F.data == 'delete_admin')
@@ -156,9 +165,14 @@ async def delete_admin_handler(callback: CallbackQuery, state: FSMContext):
 @router.message(Admin_setting.delete_admin)
 async def writing_deleting_admin_handler(msg: Message, state: FSMContext):
     id = db_scripts.find_id_by_username(str(msg.text))
-    db_scripts.delete_admin(str(id)[1:-2])
+    if id:
+        db_scripts.delete_admin(str(id)[1:-2])
+        await msg.edit(text='админ удален')
+        await msg.answer(text=menu_text, reply_markup=kb.main_admin_menu_markup)
+    else:
+        await msg.edit(text='админ не найден', reply_markup=kb.main_admin_menu_markup)
     await state.clear()
-    await msg.answer('есть таски?', reply_markup=kb.main_admin_menu_markup)
+
 
 @router.callback_query(F.data == 'add_to_list')
 async def add_to_list_handler(callback: CallbackQuery, state: FSMContext):
@@ -171,7 +185,11 @@ async def add_word_to_db_handler(callback: CallbackQuery, state: FSMContext):
         db_scripts.insert_word(post_data['word'], post_data['definition'], post_data['description'], is_sent='false')
     else:
         db_scripts.update_word(post_data['word'], post_data['definition'], post_data['description'], is_sent='false')
-    await callback.message.edit_text(text='слово добавлено.\nесть еще таски?', reply_markup=kb.admin_menu_markup)
+    await callback.message.edit_text(text='слово добавлено.')
+    if str(os.getenv('MAIN_ADMIN_ID')) == callback.message.from_user.id:
+        await callback.message.answer(text=menu_text, reply_markup=kb.main_admin_menu_markup)
+    else:
+        await callback.message.answer(text=menu_text, reply_markup=kb.admin_menu_markup)
 
 @router.callback_query(F.data == 'choose_unused_word')
 async def choose_unused_word_handler(callback: CallbackQuery, state: FSMContext):
@@ -185,20 +203,17 @@ async def writing_word_for_choosing_handler(msg: Message, state: FSMContext):
     global post_data
     word_data = db_scripts.find_word(msg.text)
     if word_data:
-        print(word_data[0])
-        post_data['word'] = word_data[0]
-        post_data['definition'] = word_data[1]
-        post_data['description'] = word_data[2]
-        await msg.answer(text='ваше слово дня', reply_markup=kb.new_word_menu_markup)
+        post_data['word'], post_data['definition'], post_data['description'], is_sent = word_data
+        await msg.answer(text='ваше слово дня - '+post_data['word'], reply_markup=kb.new_word_menu_markup)
     else:
-        await msg.answer(text='input error', reply_markup=kb.old_word_menu_markup)
+        await msg.answer(text='слово не найдено', reply_markup=kb.old_word_menu_markup)
     await state.clear()
 
 @router.callback_query(F.data == 'delete_unused_word')
 async def delete_unused_word_handler(callback: CallbackQuery, state: FSMContext):
     text = callback.message.text
     await callback.message.edit_text(text)
-    await callback.message.answer('напищите слово для удаления')
+    await callback.message.answer('напишите слово для удаления')
     await state.set_state(Word_setting.writing_to_delete)
 
 @router.message(Word_setting.writing_to_delete)
@@ -208,5 +223,15 @@ async def writing_to_delete_handler(msg: Message, state: FSMContext):
         db_scripts.delete_word(text)
         await msg.answer(text='слово удалено', reply_markup=kb.old_word_menu_markup)
     except:
-        await msg.answer(text='input error', reply_markup=kb.old_word_menu_markup)
+        await msg.answer(text='слово не найдено', reply_markup=kb.old_word_menu_markup)
     await state.clear()
+
+@router.callback_query(F.data == 'reset')
+async def reset_word_handler(callback: CallbackQuery, state: FSMContext):
+    global post_data
+    post_data['word'] = ''
+
+    post_data['definition'] = ''
+    post_data['description'] = ''
+    await callback.message.edit_text(text='текущее слово сброшено\n'+menu_text, reply_markup=kb.new_word_menu_markup)
+

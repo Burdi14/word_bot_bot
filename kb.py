@@ -16,6 +16,7 @@ new_word_menu =[
      InlineKeyboardButton(text = 'определение', callback_data = 'get_definition'),
      InlineKeyboardButton(text = 'пояснение', callback_data = 'get_description')],
   [InlineKeyboardButton(text = 'посмотреть', callback_data = 'get_look'),
+   InlineKeyboardButton(text = 'сбросить', callback_data = 'reset'),
    InlineKeyboardButton(text='добавить в список', callback_data = 'add_to_list')],
 [InlineKeyboardButton(text='меню', callback_data = 'back_to_menu')]
 ]
@@ -38,7 +39,7 @@ you_sure_post = [
 
 you_sure_post_markup = InlineKeyboardMarkup(inline_keyboard=you_sure_post)
 you_sure_menu_markup = InlineKeyboardMarkup(inline_keyboard=you_sure_menu)
-new_word_menu_markup = InlineKeyboardMarkup(inline_keyboard=new_word_menu)
+new_word_menu_markup = InlineKeyboardMarkup(inline_keyboard=new_word_menu, resize_keyboard=False)
 main_admin_menu_markup = InlineKeyboardMarkup(inline_keyboard=main_admin_menu)
 admin_menu_markup = InlineKeyboardMarkup(inline_keyboard=admin_menu)
 old_word_menu_markup = InlineKeyboardMarkup(inline_keyboard=old_word_menu)
