@@ -1,5 +1,6 @@
 import psycopg2
-
+import os
+from load_dotenv import load_dotenv
 INSERT_NEW_USER = "INSERT INTO users (user_id, username) VALUES ({user_id}, '{username}');"
 GET_USERS = "SELECT user_id FROM users;"
 DELETE_USER = "DELETE FROM users WHERE user_id = {user_id};"
@@ -17,8 +18,8 @@ FIND_WORD = "SELECT * FROM words WHERE word = '{word}';"
 UPDATE_WORD = "UPDATE words SET definition = '{definition}', description ='{description}', is_sent = '{is_sent}' WHERE word = '{word}';"
 DELETE_WORD = "DELETE FROM words WHERE word = '{word}';"
 
-conn = psycopg2.connect("dbname=word_bot user=burdi password=")
-
+load_dotenv()
+conn = psycopg2.connect(f"dbname={os.getenv('db_name')} user={os.getenv('db_user')} password={os.getenv('db_password')}")
 cur = conn.cursor()
 
 def find_user(user_id):
