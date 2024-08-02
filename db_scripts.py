@@ -19,7 +19,8 @@ UPDATE_WORD = "UPDATE words SET definition = '{definition}', description ='{desc
 DELETE_WORD = "DELETE FROM words WHERE word = '{word}';"
 
 load_dotenv()
-conn = psycopg2.connect(f"dbname={os.getenv('db_name')} user={os.getenv('db_user')} password={os.getenv('db_password')}")
+conn = psycopg2.connect(database={os.getenv('db_name')}, user={os.getenv('db_user')},
+                        password={os.getenv('db_password')}, host='127.0.0.1', port='5432')
 cur = conn.cursor()
 
 def find_user(user_id):
