@@ -27,7 +27,6 @@ def wrap_post(word, definition, description):
     return msg
 
 def send_word():
-    global post_data
     msg = wrap_post(post_data['word'], post_data['definition'], post_data['description'])
     post_data['word'] = ''
     post_data['definition'] = ''
@@ -41,7 +40,7 @@ async def start_handler(msg: Message, state: FSMContext):
     elif db_scripts.find_admin(str(msg.from_user.id)):
         await msg.answer(menu_text, reply_markup=kb.admin_menu_markup)
     else:
-        if db_scripts.find_user(str(msg.from_user.id)) == 'false':
+        if db_scripts.find_user(str(msg.from_user.id)) == False:
             db_scripts.insert_new_user(str(msg.from_user.id), str(msg.from_user.username))
         await msg.answer(text=greet.format(name=msg.from_user.first_name))
 
@@ -110,7 +109,7 @@ async def get_unused_words_handler(callback: CallbackQuery):
 
     if list_words == None:
         await callback.message.edit_text(text=menu_text)
-        if os.getenv('MAIN_ADMIN_ID') == 'false':
+        if os.getenv('MAIN_ADMIN_ID') != str(callback.from_user.id):
             await callback.message.answer(text='нет неиспользованных слов', reply_markup=kb.admin_menu_markup)
         else:
             await callback.message.answer(text='нет неиспользованных слов', reply_markup=kb.main_admin_menu_markup)
@@ -138,7 +137,7 @@ async def write_word_to_check(msg: Message, state: FSMContext):
 @router.callback_query(F.data == 'back_to_menu')
 async def back_to_menu(callback: CallbackQuery):
     user_id = callback.from_user.id
-    if user_id == str(os.getenv('MAIN_ADMIN_ID')):
+    if str(user_id) == str(os.getenv('MAIN_ADMIN_ID')):
         await callback.message.edit_text(text=menu_text, reply_markup=kb.main_admin_menu_markup)
     else:
         await callback.message.edit_text(text=menu_text, reply_markup=kb.admin_menu_markup)
@@ -151,10 +150,12 @@ async def add_admin_handler(callback: CallbackQuery, state: FSMContext):
 @router.message(Admin_setting.add_admin)
 async def writing_new_admin_handler(msg: Message, state: FSMContext):
     id = db_scripts.find_id_by_username(str(msg.text))
-    db_scripts.insert_new_addmin(str(id)[1:-2])
+    if  id != None:
+        db_scripts.insert_new_addmin(str(id)[1:-2])
+        await msg.answer(text=menu_text, reply_markup=kb.main_admin_menu_markup)
+    else:
+        await msg.answer(text='админ не нвйден', reply_markup=kb.main_admin_menu_markup)
     await state.clear()
-    await msg.answer(text=menu_text, reply_markup=kb.main_admin_menu_markup)
-
 
 @router.callback_query(F.data == 'delete_admin')
 async def delete_admin_handler(callback: CallbackQuery, state: FSMContext):
@@ -167,10 +168,10 @@ async def writing_deleting_admin_handler(msg: Message, state: FSMContext):
     id = db_scripts.find_id_by_username(str(msg.text))
     if id:
         db_scripts.delete_admin(str(id)[1:-2])
-        await msg.edit(text='админ удален')
+        await msg.answer(text='админ удален')
         await msg.answer(text=menu_text, reply_markup=kb.main_admin_menu_markup)
     else:
-        await msg.edit(text='админ не найден', reply_markup=kb.main_admin_menu_markup)
+        await msg.answer(text='админ не найден', reply_markup=kb.main_admin_menu_markup)
     await state.clear()
 
 
