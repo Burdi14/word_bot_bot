@@ -31,6 +31,7 @@ async def post(callback: CallbackQuery):
     text = send_word()
     for user_id in users_to_send:
         await bot.send_message(user_id[0], text)
+        await bot.send_message(user_id, text)
     if str(os.getenv('MAIN_ADMIN_ID')) == str(callback.from_user.id):
         await callback.message.answer(text=menu_text, reply_markup=kb.main_admin_menu_markup)
     else:
