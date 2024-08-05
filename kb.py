@@ -16,8 +16,8 @@ new_word_menu =[
      InlineKeyboardButton(text = 'определение', callback_data = 'get_definition'),
      InlineKeyboardButton(text = 'пояснение', callback_data = 'get_description')],
   [InlineKeyboardButton(text = 'посмотреть', callback_data = 'get_look'),
-   InlineKeyboardButton(text = 'сбросить', callback_data = 'reset'),
-   InlineKeyboardButton(text='добавить в список', callback_data = 'add_to_list')],
+   InlineKeyboardButton(text = 'сбросить', callback_data = 'reset')],
+   [InlineKeyboardButton(text='добавить в список', callback_data = 'add_to_list')],
 [InlineKeyboardButton(text='меню', callback_data = 'back_to_menu')]
 ]
 
